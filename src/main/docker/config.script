@@ -1,0 +1,4 @@
+embed-server --std-out=echo --server-config=standalone.xml
+/interface=public:undefine-attribute(name=inet-address)
+/interface=public:write-attribute(name=any-address, value=true)
+deploy --name=${project.build.finalName}.war /tmp/${project.build.finalName}.war
