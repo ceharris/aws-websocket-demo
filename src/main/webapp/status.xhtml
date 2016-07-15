@@ -1,0 +1,90 @@
+<!DOCTYPE html [
+    <!ENTITY nbsp "&#160;"> 
+]>
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:f="http://xmlns.jcp.org/jsf/core"
+  xmlns:h="http://xmlns.jcp.org/jsf/html"
+  xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="icon" href="#{request.contextPath}/favicon.ico"/>
+
+  <title>Status Page</title>
+  <link href='//fonts.googleapis.com/css?family=Source+Sans+Pro:400,700' rel='stylesheet' type='text/css' />
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="resources/css/theme.css" />
+</head>
+<body>
+
+	<div class="navbar navbar-default navbar-static-top">
+	  <div class="container">
+	    <div class="navbar-header">
+	      <a class="navbar-brand" href="#">
+	        <img src="resources/img/logo.png" title="Summit Logo" />
+	      </a>
+	    </div>
+	  </div>
+  </div>
+
+  <div class="container">
+    <div class="col-md-12">
+      <h2>Status Page</h2>
+      <p>If you're seeing this, looks like the app is deployed! So, at least that's working. Shocking, huh?</p>
+      
+      <h3>Other Status Checks</h3>
+      
+      <div id="jsfStatus">
+        <i class="fa #{statusPageBean.successClass}"></i> JSF <small>(rendered at <h:outputText value="#{statusPageBean.currentTime}"><f:convertDateTime type="date" pattern="MM/dd/yyyy h:mm:ss"/></h:outputText>)</small>
+      </div>
+      
+      <div id="websocketStatus">
+        <div id="wsIcon">
+          <i class="fa fa-spin fa-refresh"></i> 
+          <abbr title="Connects a WebSocket, sends a message, and displays any received messages">WebSocket Connection</abbr>
+          <small class="hide">(Last updated received: <span id="wsLastMessage"></span>)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script type="text/javascript" src="//code.jquery.com/jquery.min.js"></script>
+  <script type="text/javascript">
+    $(function() {
+      checkWs(1);
+    });
+
+    function checkWs(backoff) {
+      var path = window.location.host + window.location.pathname.replace("status.xhtml", "") + "/websocket/status";
+      var wsPing = null;
+
+      var protocol = (window.location.protocol.indexOf('https') === 0) ? "wss" : "ws";
+      var ws = new WebSocket(protocol + "://" + path);
+      ws.onopen = function() {
+        wsPing = setInterval(function() {
+          ws.send("Test message");
+        }, 5000);
+        ws.send("Hi");
+      }
+      ws.onmessage = function(msg) {
+        console.log("New WebSocket message", msg);
+        $("#wsIcon i").removeClass().addClass("fa fa-check text-success");
+        $("#wsLastMessage").text(msg.data).parent().removeClass("hide");
+      };
+      ws.onerror = function() {
+        $("#wsIcon i").removeClass().addClass("fa fa-times text-danger");
+      };
+      ws.onclose = function() {
+        $("#wsIcon i").removeClass().addClass("fa fa-times text-danger");
+        if (wsPing != null)
+          clearInterval(wsPing);
+
+        var nextBackoff = (backoff &lt; 30) ? backoff * 2 : backoff;
+        setTimeout(function() {
+          checkWs(nextBackoff);
+        }, nextBackoff * 1000);
+      };
+    }
+  </script>
+</body>
+</html>
